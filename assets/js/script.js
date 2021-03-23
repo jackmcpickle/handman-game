@@ -6,6 +6,7 @@ const $startButton = document.querySelector('.start-button');
 const $resetButton = document.querySelector('.reset-button');
 
 const WORDS = ['one', 'two', 'three', 'four', 'twelve']; // note must be lowercase
+const ALLOWED_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz0123456789 '; // words must be made up from this set.
 const SCORE_STORAGE_KEY = 'score';
 const RANDOM_WORD_STORAGE_KEY = 'randomWord';
 const GUESSED_WORD_STORAGE_KEY = 'guessedWord';
@@ -37,14 +38,18 @@ function setWin() {
 
 function setLoss() {
   const score = getScore();
-  const win = score.win + 1;
-  setScore(win, score.loss);
+  const loss = score.loss + 1;
+  setScore(score.win, loss);
 }
 
 function renderScore() {
   const score = getScore()
-  $loseDisplayElement.textContent = score.win;
-  $winDisplayElement.textContent = score.loss;
+  $loseDisplayElement.textContent = score.loss;
+  $winDisplayElement.textContent = score.win;
+}
+
+function wordIsGuessed() {
+  return getRandomiseWord() === getGuessedWord();
 }
 
 function startCountdown() {
@@ -54,13 +59,15 @@ function startCountdown() {
     renderTimer(time)
     if (time > 0 && wordIsGuessed()) {
       setWin();
-      renderScore();
+      renderNotice('YOU WON!');
     } else if (time <= 0) {
       setLoss();
-      renderScore();
+      renderNotice('You lost...');
     } else {
       return;
     }
+    renderScore();
+    endGame()
     clearInterval(timer);
   }, COUNT_DOWN_INTERVAL);
 }
@@ -91,10 +98,9 @@ function setGuessedWord(word) {
 
 function checkKey(event) {
   const letterGuessed = event.key.toLowerCase();
-  const alphabetNumericCharacters = 'abcdefghijklmnopqrstuvwxyz0123456789 '.split('');
+  const alphabetNumericCharacters = ALLOWED_CHARACTERS.split('');
   if (alphabetNumericCharacters.includes(letterGuessed)) {
     checkLetters(letterGuessed);
-    checkWin();
   }
 }
 
@@ -102,14 +108,14 @@ function checkKey(event) {
 function checkLetters(letter) {
   const chosenWordLetters = getRandomiseWord().split('');
   const guessedWordLetters = getGuessedWord().split('');
-  if (chosenWord.includes(letter)) {
+  if (chosenWordLetters.includes(letter)) {
     const updatedGuessedLetters = guessedWordLetters.map(function checkLetter(guessedLetter, index) {
       if (chosenWordLetters[index] === letter) {
         return letter;
       }
       return guessedLetter;
     });
-    setGuessedWord(updatedGuessedLetters);
+    setGuessedWord(updatedGuessedLetters.join(''));
     renderGuessedWord();
   }
 }
@@ -120,7 +126,11 @@ function renderTimer(time) {
 
 function renderGuessedWord() {
   const guessedWord = getGuessedWord();
-  $wordBlankElement.textContent = guessedWord.split('').join(' ');
+  renderNotice(guessedWord.split('').join(' '));
+}
+
+function renderNotice(text) {
+  $wordBlankElement.textContent = text;
 }
 
 function startGame() {
@@ -128,6 +138,7 @@ function startGame() {
   newRandomiseWord();
   newGuessedWord();
   startCountdown();
+  renderGuessedWord();
   document.addEventListener('keypress', checkKey);
 }
 
